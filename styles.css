@@ -11,7 +11,15 @@
 
 body {
   margin: 0;
-  padding: 32px;
+  padding: 0;
+}
+
+.top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 32px 8px;
 }
 
 h1 {
@@ -24,11 +32,31 @@ p {
   color: #4b5565;
 }
 
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.toggle input {
+  accent-color: #2563eb;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 60px minmax(0, 1fr);
   gap: 16px;
   align-items: start;
+  padding: 0 32px 32px;
 }
 
 .panel {
@@ -97,6 +125,9 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 60vh;
+  overflow: auto;
+  padding-right: 6px;
 }
 
 .item {

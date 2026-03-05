@@ -7,17 +7,24 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <h1>Requirements Linker</h1>
-    <p>Drag a paragraph from the left into one or more paragraphs on the right to create links.</p>
-
-    <div class="toolbar">
-      <button id="resetLinks">Clear links</button>
-      <button class="secondary" id="exportLinks">Copy links as JSON</button>
-      <button class="secondary" id="modeSingle">Single select</button>
-      <button class="secondary" id="modeMulti">Multi select</button>
-      <button id="linkSelected">Link selected</button>
-      <span class="muted" id="status">0 links</span>
-    </div>
+    <header class="top-bar">
+      <div>
+        <h1>Requirements Linker</h1>
+        <p>Drag a paragraph from the left into one or more paragraphs on the right to create links.</p>
+      </div>
+      <div class="menu">
+        <button id="resetLinks">Clear links</button>
+        <button class="secondary" id="exportLinks">Copy links as JSON</button>
+        <button class="secondary" id="modeSingle">Single select</button>
+        <button class="secondary" id="modeMulti">Multi select</button>
+        <button id="linkSelected">Link selected</button>
+        <label class="toggle">
+          <input type="checkbox" id="syncScroll" />
+          Sync scroll
+        </label>
+        <span class="muted" id="status">0 links</span>
+      </div>
+    </header>
 
     <div class="layout">
       <section class="panel">

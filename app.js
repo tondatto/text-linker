@@ -30,11 +30,13 @@ const deleteLinkButton = document.getElementById("deleteLinkButton");
 const modeSingleButton = document.getElementById("modeSingle");
 const modeMultiButton = document.getElementById("modeMulti");
 const linkSelectedButton = document.getElementById("linkSelected");
+const syncScrollToggle = document.getElementById("syncScroll");
 const links = [];
 let activeLinkIndex = null;
 let mode = "single";
 let selectedA = null;
 const selectedB = new Set();
+let isSyncingScroll = false;
 
 const parseText = (text) => {
   const trimmed = text.trim();
@@ -192,6 +194,20 @@ const shouldRenderLink = (link) => {
   return (fromMatchesA || toMatchesA) && (fromMatchesB || toMatchesB);
 };
 
+const getEndpoint = (side, rect, listRect, canvasRect) => {
+  let y = rect.top + rect.height / 2;
+  let clamped = false;
+  if (y < listRect.top) {
+    y = listRect.top + 6;
+    clamped = true;
+  } else if (y > listRect.bottom) {
+    y = listRect.bottom - 6;
+    clamped = true;
+  }
+  const x = (side === "a" ? rect.right : rect.left) - canvasRect.left;
+  return { x, y: y - canvasRect.top, clamped };
+};
+
 const removeLink = (index) => {
   links.splice(index, 1);
   activeLinkIndex = null;
@@ -210,24 +226,52 @@ const renderLinks = () => {
     const fromRect = fromEl.getBoundingClientRect();
     const toRect = toEl.getBoundingClientRect();
     const canvasRect = linkCanvas.getBoundingClientRect();
+    const listRectA = docA.getBoundingClientRect();
+    const listRectB = docB.getBoundingClientRect();
     const fromSide = link.from.split("-")[0];
     const toSide = link.to.split("-")[0];
-    const x1 = (fromSide === "a" ? fromRect.right : fromRect.left) - canvasRect.left;
-    const y1 = fromRect.top + fromRect.height / 2 - canvasRect.top;
-    const x2 = (toSide === "a" ? toRect.right : toRect.left) - canvasRect.left;
-    const y2 = toRect.top + toRect.height / 2 - canvasRect.top;
+    const fromPoint = getEndpoint(fromSide, fromRect, fromSide === "a" ? listRectA : listRectB, canvasRect);
+    const toPoint = getEndpoint(toSide, toRect, toSide === "a" ? listRectA : listRectB, canvasRect);
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    const dx = (x2 - x1) / 2;
-    path.setAttribute("d", `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`);
-    path.setAttribute("stroke", "#2563eb");
+    const dx = (toPoint.x - fromPoint.x) / 2;
+    path.setAttribute(
+      "d",
+      `M ${fromPoint.x} ${fromPoint.y} C ${fromPoint.x + dx} ${fromPoint.y}, ${toPoint.x - dx} ${toPoint.y}, ${toPoint.x} ${toPoint.y}`
+    );
+    const gradientId = `link-gradient-${index}`;
+    if (fromPoint.clamped || toPoint.clamped) {
+      const defs = linkCanvas.querySelector("defs") || document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      if (!defs.parentNode) linkCanvas.appendChild(defs);
+      const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+      gradient.setAttribute("id", gradientId);
+      gradient.setAttribute("gradientUnits", "userSpaceOnUse");
+      gradient.setAttribute("x1", fromPoint.x);
+      gradient.setAttribute("y1", fromPoint.y);
+      gradient.setAttribute("x2", toPoint.x);
+      gradient.setAttribute("y2", toPoint.y);
+      const stopStart = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+      stopStart.setAttribute("offset", "0%");
+      stopStart.setAttribute("stop-color", "#2563eb");
+      stopStart.setAttribute("stop-opacity", fromPoint.clamped ? "0.15" : "1");
+      const stopEnd = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+      stopEnd.setAttribute("offset", "100%");
+      stopEnd.setAttribute("stop-color", "#2563eb");
+      stopEnd.setAttribute("stop-opacity", toPoint.clamped ? "0.15" : "1");
+      gradient.appendChild(stopStart);
+      gradient.appendChild(stopEnd);
+      defs.appendChild(gradient);
+      path.setAttribute("stroke", `url(#${gradientId})`);
+    } else {
+      path.setAttribute("stroke", "#2563eb");
+    }
     path.setAttribute("stroke-width", "2");
     path.setAttribute("fill", "none");
     path.classList.add("link-path");
     path.addEventListener("mouseenter", () => {
       activeLinkIndex = index;
       deleteLinkButton.classList.add("visible");
-      deleteLinkButton.style.left = `${(x1 + x2) / 2}px`;
-      deleteLinkButton.style.top = `${(y1 + y2) / 2}px`;
+      deleteLinkButton.style.left = `${(fromPoint.x + toPoint.x) / 2}px`;
+      deleteLinkButton.style.top = `${(fromPoint.y + toPoint.y) / 2}px`;
     });
     path.addEventListener("mouseleave", (event) => {
       if (event.relatedTarget === deleteLinkButton) return;
@@ -270,6 +314,24 @@ filterB.addEventListener("input", renderAll);
 modeSingleButton.addEventListener("click", () => setMode("single"));
 modeMultiButton.addEventListener("click", () => setMode("multi"));
 linkSelectedButton.addEventListener("click", linkSelected);
+
+docA.addEventListener("scroll", () => {
+  if (syncScrollToggle.checked && !isSyncingScroll) {
+    isSyncingScroll = true;
+    docB.scrollTop = docA.scrollTop;
+    isSyncingScroll = false;
+  }
+  renderLinks();
+});
+
+docB.addEventListener("scroll", () => {
+  if (syncScrollToggle.checked && !isSyncingScroll) {
+    isSyncingScroll = true;
+    docA.scrollTop = docB.scrollTop;
+    isSyncingScroll = false;
+  }
+  renderLinks();
+});
 
 const hideDeleteButton = () => {
   if (activeLinkIndex === null) {
