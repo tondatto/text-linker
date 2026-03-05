@@ -27,8 +27,14 @@ const linkCanvas = document.getElementById("linkCanvas");
 const linksList = document.getElementById("linksList");
 const status = document.getElementById("status");
 const deleteLinkButton = document.getElementById("deleteLinkButton");
+const modeSingleButton = document.getElementById("modeSingle");
+const modeMultiButton = document.getElementById("modeMulti");
+const linkSelectedButton = document.getElementById("linkSelected");
 const links = [];
 let activeLinkIndex = null;
+let mode = "single";
+let selectedA = null;
+const selectedB = new Set();
 
 const parseText = (text) => {
   const trimmed = text.trim();
@@ -56,14 +62,29 @@ const loadFromInput = (side) => {
 
 const applyFilter = (items, query) => {
   const needle = query.trim().toLowerCase();
-  if (!needle) return items;
-  return items.filter((text) => text.toLowerCase().includes(needle));
+  return items
+    .map((text, index) => ({ text, index }))
+    .filter(({ text }) => !needle || text.toLowerCase().includes(needle));
 };
 
 const renderAll = () => {
   renderList(docA, applyFilter(dataA, filterA.value), "a");
   renderList(docB, applyFilter(dataB, filterB.value), "b");
   renderLinks();
+};
+
+const resetSelection = () => {
+  selectedA = null;
+  selectedB.clear();
+};
+
+const setMode = (nextMode) => {
+  mode = nextMode;
+  modeSingleButton.classList.toggle("active", mode === "single");
+  modeMultiButton.classList.toggle("active", mode === "multi");
+  linkSelectedButton.disabled = mode !== "multi";
+  resetSelection();
+  renderAll();
 };
 
 const readFile = (file) =>
@@ -76,7 +97,7 @@ const readFile = (file) =>
 
 const renderList = (container, items, prefix) => {
   container.innerHTML = "";
-  items.forEach((text, index) => {
+  items.forEach(({ text, index }) => {
     const item = document.createElement("div");
     item.className = "item drop-target";
     item.dataset.id = `${prefix}-${index}`;
@@ -99,6 +120,12 @@ const renderList = (container, items, prefix) => {
       if (!sourceId) return;
       addLink(sourceId, item.dataset.id);
     });
+    item.addEventListener("click", () => {
+      handleSelection(item.dataset.id, item);
+    });
+    if (isSelected(item.dataset.id)) {
+      item.classList.add("selected");
+    }
     container.appendChild(item);
   });
 };
@@ -108,6 +135,44 @@ const addLink = (fromId, toId) => {
   if (links.some((link) => link.from === fromId && link.to === toId)) return;
   links.push({ from: fromId, to: toId });
   renderLinks();
+};
+
+const isSelected = (id) => {
+  if (!id) return false;
+  const side = id.split("-")[0];
+  if (side === "a") return selectedA === id;
+  return selectedB.has(id);
+};
+
+const handleSelection = (id, element) => {
+  const side = id.split("-")[0];
+  if (mode === "single") {
+    if (side === "a") {
+      selectedA = selectedA === id ? null : id;
+      renderAll();
+    } else {
+      if (!selectedA) return;
+      addLink(selectedA, id);
+    }
+    return;
+  }
+  if (side === "a") {
+    selectedA = selectedA === id ? null : id;
+  } else {
+    if (selectedB.has(id)) {
+      selectedB.delete(id);
+    } else {
+      selectedB.add(id);
+    }
+  }
+  element.classList.toggle("selected", isSelected(id));
+};
+
+const linkSelected = () => {
+  if (!selectedA || selectedB.size === 0) return;
+  selectedB.forEach((id) => addLink(selectedA, id));
+  resetSelection();
+  renderAll();
 };
 
 const shouldRenderLink = (link) => {
@@ -189,6 +254,8 @@ const renderLinks = () => {
     linksList.appendChild(li);
   });
   status.textContent = `${links.length} links`;
+  deleteLinkButton.classList.remove("visible");
+  activeLinkIndex = null;
 };
 
 document.getElementById("resetLinks").addEventListener("click", () => {
@@ -200,6 +267,9 @@ document.getElementById("resetLinks").addEventListener("click", () => {
 
 filterA.addEventListener("input", renderAll);
 filterB.addEventListener("input", renderAll);
+modeSingleButton.addEventListener("click", () => setMode("single"));
+modeMultiButton.addEventListener("click", () => setMode("multi"));
+linkSelectedButton.addEventListener("click", linkSelected);
 
 const hideDeleteButton = () => {
   if (activeLinkIndex === null) {
@@ -272,4 +342,5 @@ document.getElementById("fileB").addEventListener("change", async (event) => {
 
 window.addEventListener("resize", renderLinks);
 
+setMode("single");
 renderAll();

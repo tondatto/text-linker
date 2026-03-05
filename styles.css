@@ -108,6 +108,11 @@ textarea {
   position: relative;
 }
 
+.item.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
 .item.dragging {
   opacity: 0.5;
 }
@@ -188,6 +193,16 @@ button {
 button.secondary {
   background: #e2e8f0;
   color: #1f2937;
+}
+
+button.active {
+  background: #1d4ed8;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .links-list {
