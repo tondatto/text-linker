@@ -63,7 +63,7 @@ const loadFromInput = (side) => {
 const applyFilter = (items, query) => {
   const needle = query.trim().toLowerCase();
   return items
-    .map((text, index) => ({ text, index }))
+    .map((text, originalIndex) => ({ text, originalIndex }))
     .filter(({ text }) => !needle || text.toLowerCase().includes(needle));
 };
 
@@ -97,11 +97,11 @@ const readFile = (file) =>
 
 const renderList = (container, items, prefix) => {
   container.innerHTML = "";
-  items.forEach(({ text, index }) => {
+  items.forEach(({ text, originalIndex }) => {
     const item = document.createElement("div");
     item.className = "item drop-target";
-    item.dataset.id = `${prefix}-${index}`;
-    item.innerHTML = `<strong>${prefix.toUpperCase()} ${index + 1}</strong><div class="text">${text}</div>`;
+    item.dataset.id = `${prefix}-${originalIndex}`;
+    item.innerHTML = `<strong>${prefix.toUpperCase()} ${originalIndex + 1}</strong><div class="text">${text}</div>`;
     item.draggable = true;
     item.addEventListener("dragstart", (event) => {
       event.dataTransfer.setData("text/plain", item.dataset.id);
