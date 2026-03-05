@@ -97,10 +97,15 @@ const addLink = (fromId, toId) => {
   renderLinks();
 };
 
+const removeLink = (index) => {
+  links.splice(index, 1);
+  renderLinks();
+};
+
 const renderLinks = () => {
   linksList.innerHTML = "";
   linkCanvas.innerHTML = "";
-  links.forEach((link) => {
+  links.forEach((link, index) => {
     const fromEl = document.querySelector(`[data-id="${link.from}"]`);
     const toEl = document.querySelector(`[data-id="${link.to}"]`);
     if (!fromEl || !toEl) return;
@@ -122,7 +127,20 @@ const renderLinks = () => {
     linkCanvas.appendChild(path);
 
     const li = document.createElement("li");
-    li.textContent = `${link.from.toUpperCase()} → ${link.to.toUpperCase()}`;
+    li.className = "link-row";
+
+    const label = document.createElement("span");
+    label.className = "link-label";
+    label.textContent = `${link.from.toUpperCase()} → ${link.to.toUpperCase()}`;
+
+    const button = document.createElement("button");
+    button.className = "link-delete";
+    button.type = "button";
+    button.textContent = "Delete";
+    button.addEventListener("click", () => removeLink(index));
+
+    li.appendChild(label);
+    li.appendChild(button);
     linksList.appendChild(li);
   });
   status.textContent = `${links.length} links`;

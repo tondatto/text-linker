@@ -170,9 +170,38 @@ button.secondary {
 
 .links-list ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 0;
   color: #475569;
   font-size: 13px;
+  list-style: none;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.link-row:hover {
+  background: #f1f5f9;
+}
+
+.link-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-delete {
+  background: #fca5a5;
+  color: #7f1d1d;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .muted {
