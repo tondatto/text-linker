@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+body {
+  margin: 0;
+}
+
+.link-path {
+  cursor: pointer;
+}
+
+.link-path:hover {
+  stroke-width: 3;
+}
