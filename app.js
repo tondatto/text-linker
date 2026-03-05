@@ -107,9 +107,11 @@ const renderLinks = () => {
     const fromRect = fromEl.getBoundingClientRect();
     const toRect = toEl.getBoundingClientRect();
     const canvasRect = linkCanvas.getBoundingClientRect();
-    const x1 = fromRect.right - canvasRect.left;
+    const fromSide = link.from.split("-")[0];
+    const toSide = link.to.split("-")[0];
+    const x1 = (fromSide === "a" ? fromRect.right : fromRect.left) - canvasRect.left;
     const y1 = fromRect.top + fromRect.height / 2 - canvasRect.top;
-    const x2 = toRect.left - canvasRect.left;
+    const x2 = (toSide === "a" ? toRect.right : toRect.left) - canvasRect.left;
     const y2 = toRect.top + toRect.height / 2 - canvasRect.top;
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     const dx = (x2 - x1) / 2;
