@@ -30,11 +30,15 @@
             </label>
           </div>
         </div>
+        <div class="filter-area">
+          <input id="filterA" type="text" placeholder="Filter Document A" />
+        </div>
         <div class="list" id="docA"></div>
       </section>
 
       <div class="canvas-wrap">
         <svg id="linkCanvas"></svg>
+        <button class="link-delete-floating" id="deleteLinkButton" type="button">✕</button>
       </div>
 
       <section class="panel">
@@ -49,6 +53,9 @@
               <input type="file" id="fileB" accept=".txt" />
             </label>
           </div>
+        </div>
+        <div class="filter-area">
+          <input id="filterB" type="text" placeholder="Filter Document B" />
         </div>
         <div class="list" id="docB"></div>
       </section>

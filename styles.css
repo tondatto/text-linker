@@ -68,6 +68,18 @@ textarea {
   align-items: center;
 }
 
+.filter-area {
+  margin-bottom: 12px;
+}
+
+.filter-area input {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 .file {
   background: #e2e8f0;
   color: #1f2937;
@@ -136,6 +148,26 @@ svg {
   overflow: visible;
 }
 
+.link-delete-floating {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  background: #fee2e2;
+  color: #7f1d1d;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+  z-index: 3;
+}
+
+.link-delete-floating.visible {
+  display: flex;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;
@@ -202,6 +234,14 @@ button.secondary {
   padding: 4px 10px;
   font-size: 12px;
   cursor: pointer;
+}
+
+.link-path {
+  cursor: pointer;
+}
+
+.link-path:hover {
+  stroke-width: 3;
 }
 
 .muted {

@@ -21,10 +21,14 @@ const docA = document.getElementById("docA");
 const docB = document.getElementById("docB");
 const inputA = document.getElementById("inputA");
 const inputB = document.getElementById("inputB");
+const filterA = document.getElementById("filterA");
+const filterB = document.getElementById("filterB");
 const linkCanvas = document.getElementById("linkCanvas");
 const linksList = document.getElementById("linksList");
 const status = document.getElementById("status");
+const deleteLinkButton = document.getElementById("deleteLinkButton");
 const links = [];
+let activeLinkIndex = null;
 
 const parseText = (text) => {
   const trimmed = text.trim();
@@ -38,19 +42,28 @@ const parseText = (text) => {
 const setData = (side, list) => {
   if (side === "a") {
     dataA = list;
-    renderList(docA, dataA, "a");
   } else {
     dataB = list;
-    renderList(docB, dataB, "b");
   }
-  links.length = 0;
-  renderLinks();
+  renderAll();
 };
 
 const loadFromInput = (side) => {
   const input = side === "a" ? inputA : inputB;
   const list = parseText(input.value);
   setData(side, list);
+};
+
+const applyFilter = (items, query) => {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return items;
+  return items.filter((text) => text.toLowerCase().includes(needle));
+};
+
+const renderAll = () => {
+  renderList(docA, applyFilter(dataA, filterA.value), "a");
+  renderList(docB, applyFilter(dataB, filterB.value), "b");
+  renderLinks();
 };
 
 const readFile = (file) =>
@@ -97,8 +110,27 @@ const addLink = (fromId, toId) => {
   renderLinks();
 };
 
+const shouldRenderLink = (link) => {
+  const fromSide = link.from.split("-")[0];
+  const toSide = link.to.split("-")[0];
+  const fromIndex = Number(link.from.split("-")[1]);
+  const toIndex = Number(link.to.split("-")[1]);
+  const fromText = fromSide === "a" ? dataA[fromIndex] : dataB[fromIndex];
+  const toText = toSide === "a" ? dataA[toIndex] : dataB[toIndex];
+  if (!fromText || !toText) return false;
+  const filterTextA = filterA.value.trim().toLowerCase();
+  const filterTextB = filterB.value.trim().toLowerCase();
+  const fromMatchesA = !filterTextA || (fromSide === "a" && fromText.toLowerCase().includes(filterTextA));
+  const toMatchesA = !filterTextA || (toSide === "a" && toText.toLowerCase().includes(filterTextA));
+  const fromMatchesB = !filterTextB || (fromSide === "b" && fromText.toLowerCase().includes(filterTextB));
+  const toMatchesB = !filterTextB || (toSide === "b" && toText.toLowerCase().includes(filterTextB));
+  return (fromMatchesA || toMatchesA) && (fromMatchesB || toMatchesB);
+};
+
 const removeLink = (index) => {
   links.splice(index, 1);
+  activeLinkIndex = null;
+  deleteLinkButton.classList.remove("visible");
   renderLinks();
 };
 
@@ -106,6 +138,7 @@ const renderLinks = () => {
   linksList.innerHTML = "";
   linkCanvas.innerHTML = "";
   links.forEach((link, index) => {
+    if (!shouldRenderLink(link)) return;
     const fromEl = document.querySelector(`[data-id="${link.from}"]`);
     const toEl = document.querySelector(`[data-id="${link.to}"]`);
     if (!fromEl || !toEl) return;
@@ -124,6 +157,18 @@ const renderLinks = () => {
     path.setAttribute("stroke", "#2563eb");
     path.setAttribute("stroke-width", "2");
     path.setAttribute("fill", "none");
+    path.classList.add("link-path");
+    path.addEventListener("mouseenter", () => {
+      activeLinkIndex = index;
+      deleteLinkButton.classList.add("visible");
+      deleteLinkButton.style.left = `${(x1 + x2) / 2}px`;
+      deleteLinkButton.style.top = `${(y1 + y2) / 2}px`;
+    });
+    path.addEventListener("mouseleave", (event) => {
+      if (event.relatedTarget === deleteLinkButton) return;
+      activeLinkIndex = null;
+      deleteLinkButton.classList.remove("visible");
+    });
     linkCanvas.appendChild(path);
 
     const li = document.createElement("li");
@@ -148,7 +193,28 @@ const renderLinks = () => {
 
 document.getElementById("resetLinks").addEventListener("click", () => {
   links.length = 0;
+  activeLinkIndex = null;
+  deleteLinkButton.classList.remove("visible");
   renderLinks();
+});
+
+filterA.addEventListener("input", renderAll);
+filterB.addEventListener("input", renderAll);
+
+const hideDeleteButton = () => {
+  if (activeLinkIndex === null) {
+    deleteLinkButton.classList.remove("visible");
+  }
+};
+
+deleteLinkButton.addEventListener("click", () => {
+  if (activeLinkIndex === null) return;
+  removeLink(activeLinkIndex);
+});
+
+deleteLinkButton.addEventListener("mouseleave", () => {
+  activeLinkIndex = null;
+  hideDeleteButton();
 });
 
 document.getElementById("exportLinks").addEventListener("click", async () => {
@@ -206,6 +272,4 @@ document.getElementById("fileB").addEventListener("change", async (event) => {
 
 window.addEventListener("resize", renderLinks);
 
-renderList(docA, dataA, "a");
-renderList(docB, dataB, "b");
-renderLinks();
+renderAll();
