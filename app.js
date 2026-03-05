@@ -68,32 +68,30 @@ const renderList = (container, items, prefix) => {
     item.className = "item drop-target";
     item.dataset.id = `${prefix}-${index}`;
     item.innerHTML = `<strong>${prefix.toUpperCase()} ${index + 1}</strong><div class="text">${text}</div>`;
-    if (prefix === "a") {
-      item.draggable = true;
-      item.addEventListener("dragstart", (event) => {
-        event.dataTransfer.setData("text/plain", item.dataset.id);
-        item.classList.add("dragging");
-      });
-      item.addEventListener("dragend", () => item.classList.remove("dragging"));
-    } else {
-      item.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        item.classList.add("active");
-      });
-      item.addEventListener("dragleave", () => item.classList.remove("active"));
-      item.addEventListener("drop", (event) => {
-        event.preventDefault();
-        item.classList.remove("active");
-        const sourceId = event.dataTransfer.getData("text/plain");
-        if (!sourceId) return;
-        addLink(sourceId, item.dataset.id);
-      });
-    }
+    item.draggable = true;
+    item.addEventListener("dragstart", (event) => {
+      event.dataTransfer.setData("text/plain", item.dataset.id);
+      item.classList.add("dragging");
+    });
+    item.addEventListener("dragend", () => item.classList.remove("dragging"));
+    item.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      item.classList.add("active");
+    });
+    item.addEventListener("dragleave", () => item.classList.remove("active"));
+    item.addEventListener("drop", (event) => {
+      event.preventDefault();
+      item.classList.remove("active");
+      const sourceId = event.dataTransfer.getData("text/plain");
+      if (!sourceId) return;
+      addLink(sourceId, item.dataset.id);
+    });
     container.appendChild(item);
   });
 };
 
 const addLink = (fromId, toId) => {
+  if (fromId.split("-")[0] === toId.split("-")[0]) return;
   if (links.some((link) => link.from === fromId && link.to === toId)) return;
   links.push({ from: fromId, to: toId });
   renderLinks();
@@ -134,12 +132,20 @@ document.getElementById("resetLinks").addEventListener("click", () => {
 });
 
 document.getElementById("exportLinks").addEventListener("click", async () => {
-  const payload = links.map((link) => ({
-    from: link.from,
-    to: link.to,
-    fromText: dataA[Number(link.from.split("-")[1])],
-    toText: dataB[Number(link.to.split("-")[1])],
-  }));
+  const payload = links.map((link) => {
+    const fromSide = link.from.split("-")[0];
+    const toSide = link.to.split("-")[0];
+    const fromIndex = Number(link.from.split("-")[1]);
+    const toIndex = Number(link.to.split("-")[1]);
+    const fromText = fromSide === "a" ? dataA[fromIndex] : dataB[fromIndex];
+    const toText = toSide === "a" ? dataA[toIndex] : dataB[toIndex];
+    return {
+      from: link.from,
+      to: link.to,
+      fromText,
+      toText,
+    };
+  });
   await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
   status.textContent = "Copied JSON to clipboard";
   setTimeout(() => {
