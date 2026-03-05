@@ -294,6 +294,7 @@ function App() {
           onHover={handleCanvasHover}
           onLeave={handleCanvasLeave}
           onDelete={deleteLink}
+          canvasRef={canvasRef}
         />
 
         <DocumentPanel

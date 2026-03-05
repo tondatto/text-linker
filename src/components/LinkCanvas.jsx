@@ -1,6 +1,6 @@
-const LinkCanvas = ({ linkPaths, hoveredLink, onHover, onLeave, onDelete }) => (
+const LinkCanvas = ({ linkPaths, hoveredLink, onHover, onLeave, onDelete, canvasRef }) => (
   <div className="relative flex items-stretch justify-center">
-    <svg className="h-full w-full overflow-visible">
+    <svg ref={canvasRef} className="h-full w-full overflow-visible">
       <defs>
         {linkPaths
           .filter((path) => path.clamped)
