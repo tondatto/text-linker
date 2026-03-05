@@ -29,17 +29,10 @@ const links = [];
 const parseText = (text) => {
   const trimmed = text.trim();
   if (!trimmed) return [];
-  let parts = trimmed
-    .split(/\n\s*\n/)
+  return trimmed
+    .split(/\n/)
     .map((part) => part.trim())
     .filter(Boolean);
-  if (parts.length <= 1) {
-    parts = trimmed
-      .split(/\n+/)
-      .map((part) => part.trim())
-      .filter(Boolean);
-  }
-  return parts;
 };
 
 const setData = (side, list) => {
