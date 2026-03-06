@@ -292,6 +292,10 @@ function App() {
   )
 
   const handleCanvasSelect = useCallback((path) => {
+    if (!path) {
+      setSelectedLinkIndex(null)
+      return
+    }
     setSelectedLinkIndex(path.index)
   }, [])
 
