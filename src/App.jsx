@@ -21,7 +21,6 @@ function App() {
   const [syncScroll, setSyncScroll] = useState(false)
   const [fullScroll, setFullScroll] = useState(false)
   const [layoutTick, setLayoutTick] = useState(0)
-  const [hoveredLink, setHoveredLink] = useState(null)
   const [selectedLinkIndex, setSelectedLinkIndex] = useState(null)
   const [workspaceStatus, setWorkspaceStatus] = useState('')
 
@@ -264,7 +263,6 @@ function App() {
   const deleteLink = useCallback(
     (index) => {
       setLinks((prev) => prev.filter((_, idx) => idx !== index))
-      setHoveredLink(null)
       setSelectedLinkIndex(null)
       scheduleLayout()
     },
@@ -293,26 +291,8 @@ function App() {
     [resetSelection, scheduleLayout]
   )
 
-  const handleCanvasHover = useCallback((path) => {
-    setHoveredLink({
-      index: path.index,
-      x: (path.fromPoint.x + path.toPoint.x) / 2,
-      y: (path.fromPoint.y + path.toPoint.y) / 2,
-    })
-  }, [])
-
-  const handleCanvasLeave = useCallback((event) => {
-    if (event?.relatedTarget?.id === 'delete-link') return
-    setHoveredLink(null)
-  }, [])
-
   const handleCanvasSelect = useCallback((path) => {
     setSelectedLinkIndex(path.index)
-    setHoveredLink({
-      index: path.index,
-      x: (path.fromPoint.x + path.toPoint.x) / 2,
-      y: (path.fromPoint.y + path.toPoint.y) / 2,
-    })
   }, [])
 
   return (
@@ -356,13 +336,10 @@ function App() {
 
         <LinkCanvas
           linkPaths={linkPaths}
-          hoveredLink={hoveredLink}
-          onHover={handleCanvasHover}
-          onLeave={handleCanvasLeave}
+          selectedIndex={selectedLinkIndex}
           onSelect={handleCanvasSelect}
           onDelete={deleteLink}
           canvasRef={canvasRef}
-          selectedIndex={selectedLinkIndex}
         />
 
         <DocumentPanel

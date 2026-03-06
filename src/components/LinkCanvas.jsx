@@ -1,8 +1,5 @@
 const LinkCanvas = ({
   linkPaths,
-  hoveredLink,
-  onHover,
-  onLeave,
   onDelete,
   onSelect,
   canvasRef,
@@ -35,25 +32,31 @@ const LinkCanvas = ({
           stroke={path.clamped ? `url(#gradient-${path.index})` : '#2563eb'}
           strokeWidth={2}
           fill="none"
-          onMouseEnter={() => onHover(path)}
-          onMouseLeave={onLeave}
           onClick={() => onSelect(path)}
           className={`link-path ${selectedIndex === path.index ? 'link-path--active' : ''}`}
         />
       ))}
     </svg>
-    {hoveredLink && (
-      <button
-        id="delete-link"
-        type="button"
-        className="absolute z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-red-100 text-sm text-red-900 shadow-lg"
-        style={{ left: hoveredLink.x, top: hoveredLink.y }}
-        onClick={() => onDelete(hoveredLink.index)}
-        onMouseLeave={() => onLeave()}
-      >
-        ✕
-      </button>
-    )}
+    {selectedIndex !== null ? (
+      (() => {
+        const selectedPath = linkPaths.find((path) => path.index === selectedIndex)
+        if (!selectedPath) return null
+        return (
+          <button
+            id="delete-link"
+            type="button"
+            className="absolute z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-red-100 text-sm text-red-900 shadow-lg"
+            style={{
+              left: (selectedPath.fromPoint.x + selectedPath.toPoint.x) / 2,
+              top: (selectedPath.fromPoint.y + selectedPath.toPoint.y) / 2,
+            }}
+            onClick={() => onDelete(selectedIndex)}
+          >
+            ✕
+          </button>
+        )
+      })()
+    ) : null}
   </div>
 )
 
