@@ -1,7 +1,5 @@
 const DocumentPanel = ({
   title,
-  inputValue,
-  onInputChange,
   filterValue,
   onFilterChange,
   items,
@@ -17,14 +15,6 @@ const DocumentPanel = ({
 }) => (
   <section className="rounded-2xl bg-white p-4 shadow-xl shadow-slate-900/10">
     <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-    <div className="mt-3 space-y-2">
-      <textarea
-        className="h-32 w-full rounded-xl border border-slate-200 p-2 text-sm"
-        value={inputValue}
-        onChange={(event) => onInputChange(event.target.value)}
-        placeholder={`Paste ${title} here. Use new lines between paragraphs.`}
-      />
-    </div>
     <div className="mt-3">
       <input
         className="w-full rounded-full border border-slate-200 px-3 py-2 text-xs"

@@ -6,11 +6,7 @@ const TopBar = ({
   onSave,
   onLoad,
   onLoadA,
-  onPasteA,
-  onUploadA,
   onLoadB,
-  onPasteB,
-  onUploadB,
   onModeChange,
   onLinkSelected,
   syncScroll,
@@ -21,21 +17,20 @@ const TopBar = ({
 }) => {
   const Icon = ({ name }) => <span className="material-symbols-outlined text-base leading-none">{name}</span>
 
-  const MenuButton = ({ icon, label, onClick, disabled = false, active = false }) => (
-    <button
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition ${
-        active
-          ? 'border-blue-600 bg-blue-600 text-white'
-          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-      } disabled:cursor-not-allowed disabled:opacity-50`}
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <Icon name={icon} />
-      <span>{label}</span>
-    </button>
-  )
+  const MenuButton = ({ icon, label, onClick, disabled = false, active = false }) => {
+    const baseClass = `tl-tooltip inline-flex h-9 w-9 items-center justify-center rounded-lg border text-slate-700 transition ${
+      active
+        ? 'border-blue-600 bg-blue-600 text-white'
+        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100'
+    }`
+
+    return (
+      <button className={baseClass} type="button" onClick={onClick} disabled={disabled} aria-label={label}>
+        <Icon name={icon} />
+        <span className="tl-tooltip-text">{label}</span>
+      </button>
+    )
+  }
 
   const Group = ({ title, icon, children }) => (
     <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
@@ -63,43 +58,37 @@ const TopBar = ({
         </Group>
 
         <Group title="Document A" icon="description">
-          <MenuButton icon="publish" label="Load Document A" onClick={onLoadA} />
-          <MenuButton icon="content_paste" label="Paste from clipboard" onClick={onPasteA} />
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-100">
-            <Icon name="upload_file" />
-            <span>Upload file</span>
-            <input className="hidden" type="file" accept=".txt" onChange={onUploadA} />
-          </label>
+          <MenuButton icon="edit_document" label="Open editor for Document A" onClick={onLoadA} />
         </Group>
 
         <Group title="Document B" icon="article">
-          <MenuButton icon="publish" label="Load Document B" onClick={onLoadB} />
-          <MenuButton icon="content_paste" label="Paste from clipboard" onClick={onPasteB} />
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 transition hover:bg-slate-100">
-            <Icon name="upload_file" />
-            <span>Upload file</span>
-            <input className="hidden" type="file" accept=".txt" onChange={onUploadB} />
-          </label>
+          <MenuButton icon="edit_document" label="Open editor for Document B" onClick={onLoadB} />
         </Group>
 
         <Group title="Links" icon="share">
           <MenuButton icon="delete_sweep" label="Clear links" onClick={onClear} />
           <MenuButton icon="content_copy" label="Copy links as JSON" onClick={onCopy} />
-          <MenuButton icon="radio_button_checked" label="Single select" active={mode === 'single'} onClick={() => onModeChange('single')} />
+          <MenuButton
+            icon="radio_button_checked"
+            label="Single select"
+            active={mode === 'single'}
+            onClick={() => onModeChange('single')}
+          />
           <MenuButton icon="checklist" label="Multi select" active={mode === 'multi'} onClick={() => onModeChange('multi')} />
           <MenuButton icon="add_link" label="Link selected" onClick={onLinkSelected} disabled={mode !== 'multi'} />
-
-          <label className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700">
-            <input type="checkbox" checked={syncScroll} onChange={(event) => onSyncScrollChange(event.target.checked)} />
-            <Icon name="sync" />
-            <span>Sync scroll</span>
-          </label>
-          <label className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700">
-            <input type="checkbox" checked={fullScroll} onChange={(event) => onFullScrollChange(event.target.checked)} />
-            <Icon name="unfold_more" />
-            <span>Expand documents</span>
-          </label>
-          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500">
+          <MenuButton
+            icon="sync"
+            label="Sync scroll"
+            active={syncScroll}
+            onClick={() => onSyncScrollChange(!syncScroll)}
+          />
+          <MenuButton
+            icon="unfold_more"
+            label="Expand documents"
+            active={fullScroll}
+            onClick={() => onFullScrollChange(!fullScroll)}
+          />
+          <span className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500">
             {linksCount} links
           </span>
         </Group>

@@ -10,8 +10,6 @@ import useLinkLayout from './hooks/useLinkLayout.js'
 function App() {
   const [dataA, setDataA] = useState(initialDataA)
   const [dataB, setDataB] = useState(initialDataB)
-  const [inputA, setInputA] = useState('')
-  const [inputB, setInputB] = useState('')
   const [filterA, setFilterA] = useState('')
   const [filterB, setFilterB] = useState('')
   const [links, setLinks] = useState([])
@@ -23,6 +21,8 @@ function App() {
   const [layoutTick, setLayoutTick] = useState(0)
   const [selectedLinkIndex, setSelectedLinkIndex] = useState(null)
   const [workspaceStatus, setWorkspaceStatus] = useState('')
+  const [activeEditorDoc, setActiveEditorDoc] = useState(null)
+  const [editorText, setEditorText] = useState('')
 
   const listARef = useRef(null)
   const listBRef = useRef(null)
@@ -64,6 +64,17 @@ function App() {
     const timeout = window.setTimeout(() => setWorkspaceStatus(''), 2000)
     return () => window.clearTimeout(timeout)
   }, [workspaceStatus])
+
+  useEffect(() => {
+    if (!activeEditorDoc) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setActiveEditorDoc(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [activeEditorDoc])
 
   const resetSelection = useCallback(() => {
     setSelectedA(null)
@@ -171,14 +182,34 @@ function App() {
     return ids
   }, [links])
 
-  const handlePaste = useCallback(async (side) => {
-    const text = await navigator.clipboard.readText()
-    if (side === 'a') {
-      setInputA(text)
-      setDataA(parseText(text))
+  const openEditor = useCallback((side) => {
+    const currentText = side === 'a' ? dataA.join('\n') : dataB.join('\n')
+    setEditorText(currentText)
+    setActiveEditorDoc(side)
+  }, [dataA, dataB])
+
+  const closeEditor = useCallback(() => {
+    setActiveEditorDoc(null)
+  }, [])
+
+  const submitEditorText = useCallback(() => {
+    if (!activeEditorDoc) return
+    const parsed = parseText(editorText)
+    if (activeEditorDoc === 'a') {
+      setDataA(parsed)
     } else {
-      setInputB(text)
-      setDataB(parseText(text))
+      setDataB(parsed)
+    }
+    setActiveEditorDoc(null)
+    scheduleLayout()
+  }, [activeEditorDoc, editorText, scheduleLayout])
+
+  const pasteIntoEditor = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      setEditorText(text)
+    } catch {
+      setWorkspaceStatus('Clipboard access denied')
     }
   }, [])
 
@@ -217,17 +248,12 @@ function App() {
     }
   }, [resetSelection, scheduleLayout])
 
-  const handleUpload = useCallback(async (side, event) => {
+  const uploadIntoEditor = useCallback(async (event) => {
     const file = event.target.files?.[0]
     if (!file) return
     const text = await file.text()
-    if (side === 'a') {
-      setInputA(text)
-      setDataA(parseText(text))
-    } else {
-      setInputB(text)
-      setDataB(parseText(text))
-    }
+    setEditorText(text)
+    event.target.value = ''
   }, [])
 
   const handleDragStart = useCallback(
@@ -317,12 +343,8 @@ function App() {
         onCopy={copyLinks}
         onSave={saveWorkspace}
         onLoad={loadWorkspace}
-        onLoadA={() => setDataA(parseText(inputA))}
-        onPasteA={() => handlePaste('a')}
-        onUploadA={(event) => handleUpload('a', event)}
-        onLoadB={() => setDataB(parseText(inputB))}
-        onPasteB={() => handlePaste('b')}
-        onUploadB={(event) => handleUpload('b', event)}
+        onLoadA={() => openEditor('a')}
+        onLoadB={() => openEditor('b')}
         onModeChange={handleModeChange}
         onLinkSelected={linkSelected}
         syncScroll={syncScroll}
@@ -335,8 +357,6 @@ function App() {
       <div className="grid grid-cols-[minmax(0,1fr)_60px_minmax(0,1fr)] items-start gap-4 px-8 pb-8">
         <DocumentPanel
           title="Document A"
-          inputValue={inputA}
-          onInputChange={setInputA}
           filterValue={filterA}
           onFilterChange={setFilterA}
           items={filteredA}
@@ -361,8 +381,6 @@ function App() {
 
         <DocumentPanel
           title="Document B"
-          inputValue={inputB}
-          onInputChange={setInputB}
           filterValue={filterB}
           onFilterChange={setFilterB}
           items={filteredB}
@@ -381,6 +399,53 @@ function App() {
       <div className="px-8 pb-10">
         <LinksList links={visibleLinks} onDelete={deleteLink} />
       </div>
+
+      {activeEditorDoc ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/45 p-4" onClick={closeEditor}>
+          <div
+            className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/30"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-sm font-semibold text-slate-900">
+              {activeEditorDoc === 'a' ? 'Document A editor' : 'Document B editor'}
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">Paste text with one requirement per line, then load it.</p>
+            <textarea
+              className="mt-3 h-64 w-full rounded-xl border border-slate-200 p-3 text-sm"
+              value={editorText}
+              onChange={(event) => setEditorText(event.target.value)}
+              placeholder="Paste document text here"
+            />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                className="rounded-full border border-blue-600 bg-blue-600 px-3 py-1.5 text-xs text-white"
+                type="button"
+                onClick={submitEditorText}
+              >
+                Load document
+              </button>
+              <button
+                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700"
+                type="button"
+                onClick={pasteIntoEditor}
+              >
+                Paste from clipboard
+              </button>
+              <label className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700">
+                Upload file
+                <input className="hidden" type="file" accept=".txt" onChange={uploadIntoEditor} />
+              </label>
+              <button
+                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700"
+                type="button"
+                onClick={closeEditor}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

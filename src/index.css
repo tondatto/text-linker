@@ -18,3 +18,34 @@ body {
 .link-path--active {
   stroke-width: 3;
 }
+
+.tl-tooltip {
+  position: relative;
+}
+
+.tl-tooltip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.tl-tooltip-text {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  border-radius: 0.375rem;
+  background-color: #334155;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  z-index: 20;
+}
+
+.tl-tooltip:hover .tl-tooltip-text,
+.tl-tooltip:focus-visible .tl-tooltip-text {
+  opacity: 1;
+}
