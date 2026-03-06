@@ -162,6 +162,15 @@ function App() {
 
   const visibleLinks = useMemo(() => links.filter(shouldRenderLink), [links, shouldRenderLink])
 
+  const linkedIds = useMemo(() => {
+    const ids = new Set()
+    links.forEach((link) => {
+      ids.add(link.from)
+      ids.add(link.to)
+    })
+    return ids
+  }, [links])
+
   const handlePaste = useCallback(async (side) => {
     const text = await navigator.clipboard.readText()
     if (side === 'a') {
@@ -308,6 +317,12 @@ function App() {
         onCopy={copyLinks}
         onSave={saveWorkspace}
         onLoad={loadWorkspace}
+        onLoadA={() => setDataA(parseText(inputA))}
+        onPasteA={() => handlePaste('a')}
+        onUploadA={(event) => handleUpload('a', event)}
+        onLoadB={() => setDataB(parseText(inputB))}
+        onPasteB={() => handlePaste('b')}
+        onUploadB={(event) => handleUpload('b', event)}
         onModeChange={handleModeChange}
         onLinkSelected={linkSelected}
         syncScroll={syncScroll}
@@ -322,9 +337,6 @@ function App() {
           title="Document A"
           inputValue={inputA}
           onInputChange={setInputA}
-          onLoad={() => setDataA(parseText(inputA))}
-          onPaste={() => handlePaste('a')}
-          onUpload={(event) => handleUpload('a', event)}
           filterValue={filterA}
           onFilterChange={setFilterA}
           items={filteredA}
@@ -334,6 +346,7 @@ function App() {
           onItemClick={handleItemClick}
           onScroll={handleScrollA}
           isSelected={isSelected}
+          hasLink={(id) => linkedIds.has(id)}
           side="a"
           fullScroll={fullScroll}
         />
@@ -350,9 +363,6 @@ function App() {
           title="Document B"
           inputValue={inputB}
           onInputChange={setInputB}
-          onLoad={() => setDataB(parseText(inputB))}
-          onPaste={() => handlePaste('b')}
-          onUpload={(event) => handleUpload('b', event)}
           filterValue={filterB}
           onFilterChange={setFilterB}
           items={filteredB}
@@ -362,6 +372,7 @@ function App() {
           onItemClick={handleItemClick}
           onScroll={handleScrollB}
           isSelected={isSelected}
+          hasLink={(id) => linkedIds.has(id)}
           side="b"
           fullScroll={fullScroll}
         />

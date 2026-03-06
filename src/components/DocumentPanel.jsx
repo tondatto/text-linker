@@ -2,9 +2,6 @@ const DocumentPanel = ({
   title,
   inputValue,
   onInputChange,
-  onLoad,
-  onPaste,
-  onUpload,
   filterValue,
   onFilterChange,
   items,
@@ -13,6 +10,7 @@ const DocumentPanel = ({
   onItemDrop,
   onItemClick,
   isSelected,
+  hasLink,
   onScroll,
   side,
   fullScroll,
@@ -26,18 +24,6 @@ const DocumentPanel = ({
         onChange={(event) => onInputChange(event.target.value)}
         placeholder={`Paste ${title} here. Use new lines between paragraphs.`}
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <button className="rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-900" type="button" onClick={onLoad}>
-          Load {title}
-        </button>
-        <button className="rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-900" type="button" onClick={onPaste}>
-          Paste from clipboard
-        </button>
-        <label className="cursor-pointer rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-900">
-          Upload file
-          <input className="hidden" type="file" accept=".txt" onChange={onUpload} />
-        </label>
-      </div>
     </div>
     <div className="mt-3">
       <input
@@ -54,6 +40,7 @@ const DocumentPanel = ({
     >
       {items.map(({ text, originalIndex }) => {
         const id = `${side}-${originalIndex}`
+        const linked = hasLink(id)
         return (
           <div
             key={id}
@@ -64,7 +51,11 @@ const DocumentPanel = ({
             onDrop={(event) => onItemDrop(event, id)}
             onClick={() => onItemClick(id)}
             className={`cursor-pointer rounded-xl border px-3 py-2 text-sm ${
-              isSelected(id) ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-slate-50'
+              isSelected(id)
+                ? 'border-blue-600 bg-blue-50'
+                : linked
+                  ? 'border-emerald-200 bg-emerald-50'
+                  : 'border-slate-200 bg-slate-50'
             }`}
           >
             <strong className="block text-[11px] uppercase tracking-wide text-slate-500">
