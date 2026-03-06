@@ -36,7 +36,7 @@ const LinkCanvas = ({ linkPaths, hoveredLink, onHover, onLeave, onDelete, canvas
       <button
         id="delete-link"
         type="button"
-        className="absolute flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-sm text-red-900 shadow-lg"
+        className="absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-red-100 text-sm text-red-900 shadow-lg"
         style={{ left: hoveredLink.x, top: hoveredLink.y }}
         onClick={() => onDelete(hoveredLink.index)}
         onMouseLeave={() => onLeave()}
