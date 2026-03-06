@@ -3,10 +3,13 @@ const TopBar = ({
   linksCount,
   onClear,
   onCopy,
+  onSave,
+  onLoad,
   onModeChange,
   onLinkSelected,
   syncScroll,
   onSyncScrollChange,
+  status,
 }) => (
   <header className="flex flex-wrap items-start justify-between gap-4 px-8 pb-3 pt-6">
     <div>
@@ -21,6 +24,12 @@ const TopBar = ({
       </button>
       <button className="rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-900" type="button" onClick={onCopy}>
         Copy links as JSON
+      </button>
+      <button className="rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-900" type="button" onClick={onSave}>
+        Save workspace
+      </button>
+      <button className="rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-900" type="button" onClick={onLoad}>
+        Load workspace
       </button>
       <button
         className={`rounded-full px-3 py-1 text-xs ${mode === 'single' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-900'}`}
@@ -49,6 +58,7 @@ const TopBar = ({
         Sync scroll
       </label>
       <span className="text-xs text-slate-400">{linksCount} links</span>
+      {status ? <span className="text-xs text-slate-500">{status}</span> : null}
     </div>
   </header>
 )

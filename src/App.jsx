@@ -21,6 +21,7 @@ function App() {
   const [syncScroll, setSyncScroll] = useState(false)
   const [layoutTick, setLayoutTick] = useState(0)
   const [hoveredLink, setHoveredLink] = useState(null)
+  const [workspaceStatus, setWorkspaceStatus] = useState('')
 
   const listARef = useRef(null)
   const listBRef = useRef(null)
@@ -52,6 +53,12 @@ function App() {
   useEffect(() => {
     scheduleLayout()
   }, [selectedA, selectedB, scheduleLayout])
+
+  useEffect(() => {
+    if (!workspaceStatus) return
+    const timeout = window.setTimeout(() => setWorkspaceStatus(''), 2000)
+    return () => window.clearTimeout(timeout)
+  }, [workspaceStatus])
 
   const resetSelection = useCallback(() => {
     setSelectedA(null)
@@ -161,6 +168,39 @@ function App() {
     }
   }, [])
 
+  const saveWorkspace = useCallback(() => {
+    const payload = {
+      dataA,
+      dataB,
+      links,
+      mode,
+      syncScroll,
+    }
+    window.localStorage.setItem('text-linker-workspace', JSON.stringify(payload))
+    setWorkspaceStatus('Workspace saved')
+  }, [dataA, dataB, links, mode, syncScroll])
+
+  const loadWorkspace = useCallback(() => {
+    const raw = window.localStorage.getItem('text-linker-workspace')
+    if (!raw) {
+      setWorkspaceStatus('No saved workspace')
+      return
+    }
+    try {
+      const payload = JSON.parse(raw)
+      setDataA(Array.isArray(payload.dataA) ? payload.dataA : initialDataA)
+      setDataB(Array.isArray(payload.dataB) ? payload.dataB : initialDataB)
+      setLinks(Array.isArray(payload.links) ? payload.links : [])
+      setMode(payload.mode === 'multi' ? 'multi' : 'single')
+      setSyncScroll(Boolean(payload.syncScroll))
+      resetSelection()
+      scheduleLayout()
+      setWorkspaceStatus('Workspace loaded')
+    } catch {
+      setWorkspaceStatus('Invalid workspace data')
+    }
+  }, [resetSelection, scheduleLayout])
+
   const handleUpload = useCallback(async (side, event) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -262,10 +302,13 @@ function App() {
         linksCount={links.length}
         onClear={() => setLinks([])}
         onCopy={copyLinks}
+        onSave={saveWorkspace}
+        onLoad={loadWorkspace}
         onModeChange={handleModeChange}
         onLinkSelected={linkSelected}
         syncScroll={syncScroll}
         onSyncScrollChange={setSyncScroll}
+        status={workspaceStatus}
       />
 
       <div className="grid grid-cols-[minmax(0,1fr)_60px_minmax(0,1fr)] items-start gap-4 px-8 pb-8">
