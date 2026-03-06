@@ -19,8 +19,10 @@ function App() {
   const [selectedA, setSelectedA] = useState(null)
   const [selectedB, setSelectedB] = useState(new Set())
   const [syncScroll, setSyncScroll] = useState(false)
+  const [fullScroll, setFullScroll] = useState(false)
   const [layoutTick, setLayoutTick] = useState(0)
   const [hoveredLink, setHoveredLink] = useState(null)
+  const [selectedLinkIndex, setSelectedLinkIndex] = useState(null)
   const [workspaceStatus, setWorkspaceStatus] = useState('')
 
   const listARef = useRef(null)
@@ -53,6 +55,10 @@ function App() {
   useEffect(() => {
     scheduleLayout()
   }, [selectedA, selectedB, scheduleLayout])
+
+  useEffect(() => {
+    scheduleLayout()
+  }, [fullScroll, scheduleLayout])
 
   useEffect(() => {
     if (!workspaceStatus) return
@@ -175,10 +181,11 @@ function App() {
       links,
       mode,
       syncScroll,
+      fullScroll,
     }
     window.localStorage.setItem('text-linker-workspace', JSON.stringify(payload))
     setWorkspaceStatus('Workspace saved')
-  }, [dataA, dataB, links, mode, syncScroll])
+  }, [dataA, dataB, links, mode, syncScroll, fullScroll])
 
   const loadWorkspace = useCallback(() => {
     const raw = window.localStorage.getItem('text-linker-workspace')
@@ -193,6 +200,7 @@ function App() {
       setLinks(Array.isArray(payload.links) ? payload.links : [])
       setMode(payload.mode === 'multi' ? 'multi' : 'single')
       setSyncScroll(Boolean(payload.syncScroll))
+      setFullScroll(Boolean(payload.fullScroll))
       resetSelection()
       scheduleLayout()
       setWorkspaceStatus('Workspace loaded')
@@ -234,27 +242,30 @@ function App() {
   )
 
   const handleScrollA = useCallback(() => {
+    if (fullScroll) return
     if (syncScroll && listARef.current && listBRef.current && !syncingRef.current) {
       syncingRef.current = true
       listBRef.current.scrollTop = listARef.current.scrollTop
       syncingRef.current = false
     }
     scheduleLayout()
-  }, [scheduleLayout, syncScroll])
+  }, [fullScroll, scheduleLayout, syncScroll])
 
   const handleScrollB = useCallback(() => {
+    if (fullScroll) return
     if (syncScroll && listARef.current && listBRef.current && !syncingRef.current) {
       syncingRef.current = true
       listARef.current.scrollTop = listBRef.current.scrollTop
       syncingRef.current = false
     }
     scheduleLayout()
-  }, [scheduleLayout, syncScroll])
+  }, [fullScroll, scheduleLayout, syncScroll])
 
   const deleteLink = useCallback(
     (index) => {
       setLinks((prev) => prev.filter((_, idx) => idx !== index))
       setHoveredLink(null)
+      setSelectedLinkIndex(null)
       scheduleLayout()
     },
     [scheduleLayout]
@@ -295,6 +306,15 @@ function App() {
     setHoveredLink(null)
   }, [])
 
+  const handleCanvasSelect = useCallback((path) => {
+    setSelectedLinkIndex(path.index)
+    setHoveredLink({
+      index: path.index,
+      x: (path.fromPoint.x + path.toPoint.x) / 2,
+      y: (path.fromPoint.y + path.toPoint.y) / 2,
+    })
+  }, [])
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <TopBar
@@ -308,6 +328,8 @@ function App() {
         onLinkSelected={linkSelected}
         syncScroll={syncScroll}
         onSyncScrollChange={setSyncScroll}
+        fullScroll={fullScroll}
+        onFullScrollChange={setFullScroll}
         status={workspaceStatus}
       />
 
@@ -329,6 +351,7 @@ function App() {
           onScroll={handleScrollA}
           isSelected={isSelected}
           side="a"
+          fullScroll={fullScroll}
         />
 
         <LinkCanvas
@@ -336,8 +359,10 @@ function App() {
           hoveredLink={hoveredLink}
           onHover={handleCanvasHover}
           onLeave={handleCanvasLeave}
+          onSelect={handleCanvasSelect}
           onDelete={deleteLink}
           canvasRef={canvasRef}
+          selectedIndex={selectedLinkIndex}
         />
 
         <DocumentPanel
@@ -357,6 +382,7 @@ function App() {
           onScroll={handleScrollB}
           isSelected={isSelected}
           side="b"
+          fullScroll={fullScroll}
         />
       </div>
 

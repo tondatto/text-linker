@@ -15,6 +15,7 @@ const DocumentPanel = ({
   isSelected,
   onScroll,
   side,
+  fullScroll,
 }) => (
   <section className="rounded-2xl bg-white p-4 shadow-xl shadow-slate-900/10">
     <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
@@ -46,7 +47,11 @@ const DocumentPanel = ({
         placeholder={`Filter ${title}`}
       />
     </div>
-    <div ref={listRef} onScroll={onScroll} className="mt-3 max-h-[60vh] space-y-2 overflow-auto pr-2">
+    <div
+      ref={listRef}
+      onScroll={onScroll}
+      className={`mt-3 space-y-2 pr-2 ${fullScroll ? '' : 'max-h-[60vh] overflow-auto'}`}
+    >
       {items.map(({ text, originalIndex }) => {
         const id = `${side}-${originalIndex}`
         return (

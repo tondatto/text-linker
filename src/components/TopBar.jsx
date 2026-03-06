@@ -9,6 +9,8 @@ const TopBar = ({
   onLinkSelected,
   syncScroll,
   onSyncScrollChange,
+  fullScroll,
+  onFullScrollChange,
   status,
 }) => (
   <header className="flex flex-wrap items-start justify-between gap-4 px-8 pb-3 pt-6">
@@ -56,6 +58,10 @@ const TopBar = ({
       <label className="flex items-center gap-2 text-xs text-slate-700">
         <input type="checkbox" checked={syncScroll} onChange={(event) => onSyncScrollChange(event.target.checked)} />
         Sync scroll
+      </label>
+      <label className="flex items-center gap-2 text-xs text-slate-700">
+        <input type="checkbox" checked={fullScroll} onChange={(event) => onFullScrollChange(event.target.checked)} />
+        Expand documents
       </label>
       <span className="text-xs text-slate-400">{linksCount} links</span>
       {status ? <span className="text-xs text-slate-500">{status}</span> : null}
