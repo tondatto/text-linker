@@ -42,7 +42,7 @@ body {
   opacity: 0;
   transition: opacity 0.2s;
   white-space: nowrap;
-  z-index: 20;
+  z-index: 70;
 }
 
 .tl-tooltip:hover .tl-tooltip-text,
