@@ -354,7 +354,7 @@ function App() {
         status={workspaceStatus}
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)_60px_minmax(0,1fr)] items-start gap-4 px-8 pb-8">
+      <div className="grid grid-cols-[minmax(0,1fr)_60px_minmax(0,1fr)] items-start gap-4 px-8 pb-8 pt-20">
         <DocumentPanel
           title="Document A"
           filterValue={filterA}
