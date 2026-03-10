@@ -1,3 +1,29 @@
+const Icon = ({ name }) => <span className="material-symbols-outlined text-base leading-none">{name}</span>
+
+const MenuButton = ({ icon, label, onClick, disabled = false, active = false }) => {
+  const baseClass = `tl-tooltip inline-flex h-8 w-8 items-center justify-center rounded-md border text-slate-700 transition ${
+    active
+      ? 'border-blue-600 bg-blue-600 text-white'
+      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100'
+  }`
+
+  return (
+    <button className={baseClass} type="button" onClick={onClick} disabled={disabled} aria-label={label}>
+      <Icon name={icon} />
+      <span className="tl-tooltip-text">{label}</span>
+    </button>
+  )
+}
+
+const Group = ({ title, children }) => (
+  <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-2 py-1">
+    <div className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+      <span>{title}</span>
+    </div>
+    <div className="flex items-center gap-1.5">{children}</div>
+  </div>
+)
+
 const TopBar = ({
   mode,
   linksCount,
@@ -9,38 +35,14 @@ const TopBar = ({
   onLoadB,
   onModeChange,
   onLinkSelected,
+  onSuggestLinks,
+  suggestionLoading,
   syncScroll,
   onSyncScrollChange,
   fullScroll,
   onFullScrollChange,
   status,
 }) => {
-  const Icon = ({ name }) => <span className="material-symbols-outlined text-base leading-none">{name}</span>
-
-  const MenuButton = ({ icon, label, onClick, disabled = false, active = false }) => {
-    const baseClass = `tl-tooltip inline-flex h-8 w-8 items-center justify-center rounded-md border text-slate-700 transition ${
-      active
-        ? 'border-blue-600 bg-blue-600 text-white'
-        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100'
-    }`
-
-    return (
-      <button className={baseClass} type="button" onClick={onClick} disabled={disabled} aria-label={label}>
-        <Icon name={icon} />
-        <span className="tl-tooltip-text">{label}</span>
-      </button>
-    )
-  }
-
-  const Group = ({ title, icon, children }) => (
-    <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-2 py-1">
-      <div className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-        <span>{title}</span>
-      </div>
-      <div className="flex items-center gap-1.5">{children}</div>
-    </div>
-  )
-
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white px-5 py-2">
       <div className="flex justify-between items-center gap-5">
@@ -71,6 +73,12 @@ const TopBar = ({
             />
             <MenuButton icon="checklist" label="Multi select" active={mode === 'multi'} onClick={() => onModeChange('multi')} />
             <MenuButton icon="add_link" label="Link selected" onClick={onLinkSelected} disabled={mode !== 'multi'} />
+            <MenuButton
+              icon="auto_awesome"
+              label={suggestionLoading ? 'Suggesting links...' : 'Suggest links'}
+              onClick={onSuggestLinks}
+              disabled={suggestionLoading}
+            />
             <MenuButton
               icon="sync"
               label="Sync scroll"

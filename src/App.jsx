@@ -4,7 +4,14 @@ import LinksList from './components/LinksList.jsx'
 import TopBar from './components/TopBar.jsx'
 import LinkCanvas from './components/LinkCanvas.jsx'
 import { initialDataA, initialDataB } from './data/initialData.js'
-import { applyFilter, getEndpoint, parseText } from './utils/requirements.js'
+import {
+  applyFilter,
+  AUTO_LINK_CONFIDENCE_THRESHOLD,
+  getEndpoint,
+  OLLAMA_DEFAULT_MODEL,
+  parseText,
+  suggestLinksWithOllama,
+} from './utils/requirements.js'
 import useLinkLayout from './hooks/useLinkLayout.js'
 
 function App() {
@@ -23,12 +30,17 @@ function App() {
   const [workspaceStatus, setWorkspaceStatus] = useState('')
   const [activeEditorDoc, setActiveEditorDoc] = useState(null)
   const [editorText, setEditorText] = useState('')
+  const [suggestionLoading, setSuggestionLoading] = useState(false)
+  const [suggestionError, setSuggestionError] = useState('')
+  const [lastSuggestionRunAt, setLastSuggestionRunAt] = useState(null)
+  const [, setRawSuggestions] = useState([])
 
   const listARef = useRef(null)
   const listBRef = useRef(null)
   const canvasRef = useRef(null)
   const rafRef = useRef(null)
   const syncingRef = useRef(false)
+  const suggestionAbortRef = useRef(null)
 
   const filteredA = useMemo(() => applyFilter(dataA, filterA), [dataA, filterA])
   const filteredB = useMemo(() => applyFilter(dataB, filterB), [dataB, filterB])
@@ -75,6 +87,13 @@ function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [activeEditorDoc])
+
+  useEffect(
+    () => () => {
+      suggestionAbortRef.current?.abort()
+    },
+    []
+  )
 
   const resetSelection = useCallback(() => {
     setSelectedA(null)
@@ -334,6 +353,94 @@ function App() {
     setSelectedLinkIndex(path.index)
   }, [])
 
+  const handleSuggestLinks = useCallback(async () => {
+    if (suggestionLoading) return
+    if (dataA.length === 0 || dataB.length === 0) {
+      setWorkspaceStatus('Add content to both documents first')
+      return
+    }
+
+    suggestionAbortRef.current?.abort()
+    const controller = new AbortController()
+    suggestionAbortRef.current = controller
+    setSuggestionLoading(true)
+    setSuggestionError('')
+
+    const startedAt = performance.now()
+
+    try {
+      const result = await suggestLinksWithOllama({
+        itemsA: dataA,
+        itemsB: dataB,
+        model: OLLAMA_DEFAULT_MODEL,
+        signal: controller.signal,
+      })
+
+      const suggestions = result.suggestions ?? []
+      setRawSuggestions(suggestions)
+
+      const acceptedSuggestions = suggestions.filter(
+        (suggestion) => suggestion.confidence >= AUTO_LINK_CONFIDENCE_THRESHOLD
+      )
+
+      let addedCount = 0
+      let duplicateCount = 0
+
+      setLinks((prev) => {
+        const seen = new Set(prev.map((link) => `${link.from}->${link.to}`))
+        const next = [...prev]
+
+        acceptedSuggestions.forEach((suggestion) => {
+          const fromSide = suggestion.from.split('-')[0]
+          const toSide = suggestion.to.split('-')[0]
+          if (fromSide === toSide) return
+
+          const key = `${suggestion.from}->${suggestion.to}`
+          if (seen.has(key)) {
+            duplicateCount += 1
+            return
+          }
+          seen.add(key)
+          next.push({ from: suggestion.from, to: suggestion.to })
+          addedCount += 1
+        })
+
+        return next
+      })
+
+      setLastSuggestionRunAt(Date.now())
+      scheduleLayout()
+      setWorkspaceStatus(
+        `Suggestions: ${suggestions.length} total, ${addedCount} added, ${duplicateCount} duplicates skipped`
+      )
+
+      if (import.meta.env.DEV) {
+        const durationMs = Math.round(performance.now() - startedAt)
+        console.debug('Ollama suggestion run complete', {
+          durationMs,
+          totalSuggestions: suggestions.length,
+          acceptedSuggestions: acceptedSuggestions.length,
+          addedCount,
+          duplicateCount,
+          model: OLLAMA_DEFAULT_MODEL,
+        })
+      }
+    } catch (error) {
+      if (controller.signal.aborted) {
+        setWorkspaceStatus('Suggestion run cancelled')
+        return
+      }
+      const message = error instanceof Error ? error.message : 'Failed to suggest links'
+      setSuggestionError(message)
+      setWorkspaceStatus(`Suggestion failed: ${message}`)
+    } finally {
+      if (suggestionAbortRef.current === controller) {
+        suggestionAbortRef.current = null
+      }
+      setSuggestionLoading(false)
+    }
+  }, [dataA, dataB, scheduleLayout, suggestionLoading])
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <TopBar
@@ -347,11 +454,13 @@ function App() {
         onLoadB={() => openEditor('b')}
         onModeChange={handleModeChange}
         onLinkSelected={linkSelected}
+        onSuggestLinks={handleSuggestLinks}
+        suggestionLoading={suggestionLoading}
         syncScroll={syncScroll}
         onSyncScrollChange={setSyncScroll}
         fullScroll={fullScroll}
         onFullScrollChange={setFullScroll}
-        status={workspaceStatus}
+        status={workspaceStatus || suggestionError || (lastSuggestionRunAt ? `Last suggestion run: ${new Date(lastSuggestionRunAt).toLocaleTimeString()}` : '')}
       />
 
       <div className="grid grid-cols-[minmax(0,1fr)_60px_minmax(0,1fr)] items-start gap-4 px-8 pb-8 pt-20">

@@ -31,6 +31,7 @@ The goal of Text Linker is to make this comparison easier through a visual inter
 - Save and load workspace state from local storage
 - Copy links as JSON
 - Fixed top toolbar with quick actions
+- AI-assisted link suggestions with Ollama (localhost)
 
 ## Tech Stack
 
@@ -79,6 +80,54 @@ Then open the local URL shown in the terminal.
 4. Create links by drag-and-drop or by using selection modes.
 5. Filter documents to focus on specific content.
 6. Save the workspace or copy links as JSON when needed.
+
+## Ollama Suggestions
+
+Text Linker can suggest links automatically by calling Ollama running on your machine.
+
+### Setup
+
+1. Install Ollama from the official instructions for your OS.
+2. Start the Ollama server:
+
+```bash
+ollama serve
+```
+
+3. Pull the default model used by this project:
+
+```bash
+ollama pull llama3.1:8b
+```
+
+4. Start Text Linker in dev mode:
+
+```bash
+npm run dev
+```
+
+### Suggest Links Workflow
+
+1. Load both documents.
+2. Click the `Suggest links` button in the top toolbar.
+3. The app requests candidate matches from Ollama.
+4. Only suggestions with confidence `>= 0.85` are auto-added.
+5. Existing links are preserved and duplicate suggestions are skipped.
+
+### Notes
+
+- Default model: `llama3.1:8b`
+- Scope: all items in Document A against all items in Document B
+- Transport: Vite dev proxy routes `/api/ollama/*` to `http://localhost:11434`
+
+### Troubleshooting
+
+- `Suggestion failed: Ollama request failed (...)`:
+	Ensure `ollama serve` is running and reachable on port `11434`.
+- No suggestions returned:
+	Verify document content is loaded and try smaller documents first.
+- Slow runs on large documents:
+	Use a smaller model or split documents into fewer, larger paragraphs.
 
 ## Project Structure
 
