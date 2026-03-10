@@ -4,15 +4,10 @@ import LinksList from './components/LinksList.jsx'
 import TopBar from './components/TopBar.jsx'
 import LinkCanvas from './components/LinkCanvas.jsx'
 import { initialDataA, initialDataB } from './data/initialData.js'
-import {
-  applyFilter,
-  AUTO_LINK_CONFIDENCE_THRESHOLD,
-  getEndpoint,
-  OLLAMA_DEFAULT_MODEL,
-  parseText,
-  suggestLinksWithOllama,
-} from './utils/requirements.js'
+import { applyFilter, getEndpoint, parseText } from './utils/requirements.js'
 import useLinkLayout from './hooks/useLinkLayout.js'
+import useWorkspacePersistence from './hooks/useWorkspacePersistence.js'
+import useLinkSuggestions from './hooks/useLinkSuggestions.js'
 
 function App() {
   const [dataA, setDataA] = useState(initialDataA)
@@ -30,17 +25,12 @@ function App() {
   const [workspaceStatus, setWorkspaceStatus] = useState('')
   const [activeEditorDoc, setActiveEditorDoc] = useState(null)
   const [editorText, setEditorText] = useState('')
-  const [suggestionLoading, setSuggestionLoading] = useState(false)
-  const [suggestionError, setSuggestionError] = useState('')
-  const [lastSuggestionRunAt, setLastSuggestionRunAt] = useState(null)
-  const [, setRawSuggestions] = useState([])
 
   const listARef = useRef(null)
   const listBRef = useRef(null)
   const canvasRef = useRef(null)
   const rafRef = useRef(null)
   const syncingRef = useRef(false)
-  const suggestionAbortRef = useRef(null)
 
   const filteredA = useMemo(() => applyFilter(dataA, filterA), [dataA, filterA])
   const filteredB = useMemo(() => applyFilter(dataB, filterB), [dataB, filterB])
@@ -87,13 +77,6 @@ function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [activeEditorDoc])
-
-  useEffect(
-    () => () => {
-      suggestionAbortRef.current?.abort()
-    },
-    []
-  )
 
   const resetSelection = useCallback(() => {
     setSelectedA(null)
@@ -232,40 +215,25 @@ function App() {
     }
   }, [])
 
-  const saveWorkspace = useCallback(() => {
-    const payload = {
-      dataA,
-      dataB,
-      links,
-      mode,
-      syncScroll,
-      fullScroll,
-    }
-    window.localStorage.setItem('text-linker-workspace', JSON.stringify(payload))
-    setWorkspaceStatus('Workspace saved')
-  }, [dataA, dataB, links, mode, syncScroll, fullScroll])
-
-  const loadWorkspace = useCallback(() => {
-    const raw = window.localStorage.getItem('text-linker-workspace')
-    if (!raw) {
-      setWorkspaceStatus('No saved workspace')
-      return
-    }
-    try {
-      const payload = JSON.parse(raw)
-      setDataA(Array.isArray(payload.dataA) ? payload.dataA : initialDataA)
-      setDataB(Array.isArray(payload.dataB) ? payload.dataB : initialDataB)
-      setLinks(Array.isArray(payload.links) ? payload.links : [])
-      setMode(payload.mode === 'multi' ? 'multi' : 'single')
-      setSyncScroll(Boolean(payload.syncScroll))
-      setFullScroll(Boolean(payload.fullScroll))
-      resetSelection()
-      scheduleLayout()
-      setWorkspaceStatus('Workspace loaded')
-    } catch {
-      setWorkspaceStatus('Invalid workspace data')
-    }
-  }, [resetSelection, scheduleLayout])
+  const { saveWorkspace, loadWorkspace } = useWorkspacePersistence({
+    dataA,
+    dataB,
+    links,
+    mode,
+    syncScroll,
+    fullScroll,
+    setDataA,
+    setDataB,
+    setLinks,
+    setMode,
+    setSyncScroll,
+    setFullScroll,
+    setWorkspaceStatus,
+    resetSelection,
+    scheduleLayout,
+    initialDataA,
+    initialDataB,
+  })
 
   const uploadIntoEditor = useCallback(async (event) => {
     const file = event.target.files?.[0]
@@ -353,113 +321,73 @@ function App() {
     setSelectedLinkIndex(path.index)
   }, [])
 
-  const handleSuggestLinks = useCallback(async () => {
-    if (suggestionLoading) return
-    if (dataA.length === 0 || dataB.length === 0) {
-      setWorkspaceStatus('Add content to both documents first')
-      return
-    }
+  const {
+    handleSuggestLinks,
+    suggestionError,
+    suggestionLoading,
+    lastSuggestionRunAt,
+  } = useLinkSuggestions({
+    dataA,
+    dataB,
+    setLinks,
+    scheduleLayout,
+    setWorkspaceStatus,
+  })
 
-    suggestionAbortRef.current?.abort()
-    const controller = new AbortController()
-    suggestionAbortRef.current = controller
-    setSuggestionLoading(true)
-    setSuggestionError('')
+  const workspaceActions = useMemo(
+    () => ({
+      onSave: saveWorkspace,
+      onLoad: loadWorkspace,
+    }),
+    [loadWorkspace, saveWorkspace]
+  )
 
-    const startedAt = performance.now()
+  const documentActions = useMemo(
+    () => ({
+      onLoadA: () => openEditor('a'),
+      onLoadB: () => openEditor('b'),
+    }),
+    [openEditor]
+  )
 
-    try {
-      const result = await suggestLinksWithOllama({
-        itemsA: dataA,
-        itemsB: dataB,
-        model: OLLAMA_DEFAULT_MODEL,
-        signal: controller.signal,
-      })
+  const linkActions = useMemo(
+    () => ({
+      onClear: () => setLinks([]),
+      onCopy: copyLinks,
+      onModeChange: handleModeChange,
+      onLinkSelected: linkSelected,
+    }),
+    [copyLinks, handleModeChange, linkSelected]
+  )
 
-      const suggestions = result.suggestions ?? []
-      setRawSuggestions(suggestions)
+  const suggestionActions = useMemo(
+    () => ({
+      onSuggestLinks: handleSuggestLinks,
+      loading: suggestionLoading,
+    }),
+    [handleSuggestLinks, suggestionLoading]
+  )
 
-      const acceptedSuggestions = suggestions.filter(
-        (suggestion) => suggestion.confidence >= AUTO_LINK_CONFIDENCE_THRESHOLD
-      )
-
-      let addedCount = 0
-      let duplicateCount = 0
-
-      setLinks((prev) => {
-        const seen = new Set(prev.map((link) => `${link.from}->${link.to}`))
-        const next = [...prev]
-
-        acceptedSuggestions.forEach((suggestion) => {
-          const fromSide = suggestion.from.split('-')[0]
-          const toSide = suggestion.to.split('-')[0]
-          if (fromSide === toSide) return
-
-          const key = `${suggestion.from}->${suggestion.to}`
-          if (seen.has(key)) {
-            duplicateCount += 1
-            return
-          }
-          seen.add(key)
-          next.push({ from: suggestion.from, to: suggestion.to })
-          addedCount += 1
-        })
-
-        return next
-      })
-
-      setLastSuggestionRunAt(Date.now())
-      scheduleLayout()
-      setWorkspaceStatus(
-        `Suggestions: ${suggestions.length} total, ${addedCount} added, ${duplicateCount} duplicates skipped`
-      )
-
-      if (import.meta.env.DEV) {
-        const durationMs = Math.round(performance.now() - startedAt)
-        console.debug('Ollama suggestion run complete', {
-          durationMs,
-          totalSuggestions: suggestions.length,
-          acceptedSuggestions: acceptedSuggestions.length,
-          addedCount,
-          duplicateCount,
-          model: OLLAMA_DEFAULT_MODEL,
-        })
-      }
-    } catch (error) {
-      if (controller.signal.aborted) {
-        setWorkspaceStatus('Suggestion run cancelled')
-        return
-      }
-      const message = error instanceof Error ? error.message : 'Failed to suggest links'
-      setSuggestionError(message)
-      setWorkspaceStatus(`Suggestion failed: ${message}`)
-    } finally {
-      if (suggestionAbortRef.current === controller) {
-        suggestionAbortRef.current = null
-      }
-      setSuggestionLoading(false)
-    }
-  }, [dataA, dataB, scheduleLayout, suggestionLoading])
+  const viewActions = useMemo(
+    () => ({
+      syncScroll,
+      onSyncScrollChange: setSyncScroll,
+      fullScroll,
+      onFullScrollChange: setFullScroll,
+    }),
+    [fullScroll, syncScroll]
+  )
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <TopBar
         mode={mode}
         linksCount={links.length}
-        onClear={() => setLinks([])}
-        onCopy={copyLinks}
-        onSave={saveWorkspace}
-        onLoad={loadWorkspace}
-        onLoadA={() => openEditor('a')}
-        onLoadB={() => openEditor('b')}
-        onModeChange={handleModeChange}
-        onLinkSelected={linkSelected}
-        onSuggestLinks={handleSuggestLinks}
-        suggestionLoading={suggestionLoading}
-        syncScroll={syncScroll}
-        onSyncScrollChange={setSyncScroll}
-        fullScroll={fullScroll}
-        onFullScrollChange={setFullScroll}
+        workspaceActions={workspaceActions}
+        documentActions={documentActions}
+        linkActions={linkActions}
+        suggestionActions={suggestionActions}
+        viewActions={viewActions}
         status={workspaceStatus || suggestionError || (lastSuggestionRunAt ? `Last suggestion run: ${new Date(lastSuggestionRunAt).toLocaleTimeString()}` : '')}
       />
 

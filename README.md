@@ -70,6 +70,7 @@ Then open the local URL shown in the terminal.
 | `npm run dev` | Starts the development server |
 | `npm run lint` | Runs ESLint |
 | `npm run build` | Creates a production build |
+| `npm test` | Runs Vitest unit tests |
 | `npm run preview` | Serves the production build locally |
 
 ## How to Use
@@ -97,7 +98,7 @@ ollama serve
 3. Pull the default model used by this project:
 
 ```bash
-ollama pull llama3.1:8b
+ollama pull qwen2.5-coder:7b
 ```
 
 4. Start Text Linker in dev mode:
@@ -116,7 +117,7 @@ npm run dev
 
 ### Notes
 
-- Default model: `llama3.1:8b`
+- Default model: `qwen2.5-coder:7b`
 - Scope: all items in Document A against all items in Document B
 - Transport: Vite dev proxy routes `/api/ollama/*` to `http://localhost:11434`
 
@@ -135,8 +136,9 @@ npm run dev
 src/
 	components/   # UI components
 	data/         # Initial sample content
-	hooks/        # Layout and interaction hooks
-	utils/        # Parsing and helper functions
+	hooks/        # Layout and domain interaction hooks
+	services/     # External service integrations (Ollama)
+	utils/        # Pure utility helpers (text/geometry)
 ```
 
 ## Use Cases

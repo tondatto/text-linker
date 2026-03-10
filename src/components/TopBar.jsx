@@ -27,22 +27,19 @@ const Group = ({ title, children }) => (
 const TopBar = ({
   mode,
   linksCount,
-  onClear,
-  onCopy,
-  onSave,
-  onLoad,
-  onLoadA,
-  onLoadB,
-  onModeChange,
-  onLinkSelected,
-  onSuggestLinks,
-  suggestionLoading,
-  syncScroll,
-  onSyncScrollChange,
-  fullScroll,
-  onFullScrollChange,
+  workspaceActions,
+  documentActions,
+  linkActions,
+  suggestionActions,
+  viewActions,
   status,
 }) => {
+  const { onSave, onLoad } = workspaceActions
+  const { onLoadA, onLoadB } = documentActions
+  const { onClear, onCopy, onModeChange, onLinkSelected } = linkActions
+  const { onSuggestLinks, loading: suggestionLoading } = suggestionActions
+  const { syncScroll, onSyncScrollChange, fullScroll, onFullScrollChange } = viewActions
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white px-5 py-2">
       <div className="flex justify-between items-center gap-5">
